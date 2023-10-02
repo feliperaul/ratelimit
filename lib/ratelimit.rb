@@ -162,8 +162,10 @@ class Ratelimit
   # Load the lua scripts into redis
   # This must be on the redis.redis object, not the namespace
   def load_scripts
-    @count_script_sha = redis.redis.script(:load, COUNT_LUA_SCRIPT)
-    @maintenance_script_sha = redis.redis.script(:load, MAINTENANCE_LUA_SCRIPT)
+    count_script_loader = Proc.new { |redis| redis.script(:load, COUNT_LUA_SCRIPT) }
+    maintenence_script_loader = Proc.new { |redis| redis.script(:load, MAINTENANCE_LUA_SCRIPT) }
+    @count_script_sha = redis.redis.respond_to?(:with) ? redis.redis.with(&count_script_loader) : count_script_loader.call(redis.redis)
+    @maintenance_script_sha = redis.redis.respond_to?(:with) ? redis.redis.with(&maintenence_script_loader) : maintenence_script_loader.call(redis.redis)
   end
 
   def redis
